@@ -23,7 +23,7 @@ jobs:
           access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           region: ap-south-1
-      - name: Push to ECR
-        run: |
-          docker tag my-image ${{ steps.ecr.outputs.account }}.dkr.ecr.us-east-1.amazonaws.com/my-image:v1
-          docker push ${{ steps.ecr.outputs.account }}.dkr.ecr.us-east-1.amazonaws.com/my-image:v1
+          
+      - name: Push Docker image to ECR
+        run: docker push ${{ github.repository }}:${{ github.sha }}
+
