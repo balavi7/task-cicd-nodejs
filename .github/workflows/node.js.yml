@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: Deploy to EC2
 
 on:
   push:
@@ -6,26 +6,42 @@ on:
       - main
 
 jobs:
-  build_and_push_to_ecr:
+  build:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Log in to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
         with:
-          region: ${{ secrets.AWS_REGION }}
-          access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          node-version: 14
+
+      - name: Install dependencies
+        run: npm install
 
       - name: Build Docker image
-        run: |
-          docker build -t ${{ secrets.ECR_REPOSITORY }}:latest .
-          docker tag ${{ secrets.ECR_REPOSITORY }}:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest
+        run: docker build -t ${{ github.repository }}:${{ github.sha }} .
 
-      - name: Push Docker image to Amazon ECR
-        run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest
+      - name: Login to AWS ECR
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          registry-urls: ${{ secrets.ECR_REGISTRY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Push Docker image to ECR
+        run: docker push ${{ github.repository }}:${{ github.sha }}
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          script: |
+            sudo docker stop my-node-app || true
+            sudo docker rm my-node-app || true
+            sudo docker pull ${{ github.repository }}:${{ github.sha }}
+            sudo docker run -d --name my-node-app -p 3000:3000 ${{ github.repository }}:${{ github.sha }}
