@@ -3,6 +3,9 @@ const express = require("express");
 require("dotenv").config();
 const app = express();
 
+// Set the AWS region
+process.env.AWS_REGION = 'ap-south-1';
+
 // route
 app.get("/", (req, res) => {
   // Sending This is the home page! in the page
