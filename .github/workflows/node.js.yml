@@ -41,7 +41,7 @@ jobs:
           key:  ${{ secrets.KEY }}
           port:  ${{ secrets.PORT }}
           script: |
-              cd /home/ubuntu
+              aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com
               docker pull $REGISTRY/$REPOSITORY:$IMAGE_TAG
               docker run -d --name nodejs-update -p 8000:8000 $REGISTRY/$REPOSITORY:$IMAGE_TAG
       
