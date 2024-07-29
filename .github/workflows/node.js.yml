@@ -32,3 +32,17 @@ jobs:
         run: |
           docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
           docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+
+      - name: deploy to ec2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username:  ${{ secrets.USER }}
+          key:  ${{ secrets.KEY }}
+          port:  ${{ secrets.PORT }}
+          script: |
+              cd /home/ubuntu
+              docker pull $REGISTRY/$REPOSITORY:$IMAGE_TAG
+              docker run -d --name nodejs-update -p 8000:8000 $REGISTRY/$REPOSITORY:$IMAGE_TAG
+      
+   
